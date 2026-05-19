@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Drivetrain Calc</title>
+    <style>
+        :root {
+            --primary: #ffffff;
+            --bg: #000000;
+            --card: #141414;
+            --text: #e5e5e5;
+            --text-muted: #737373;
+            --border: #262626;
+            --track-bg: #404040;
+            --accent: #d4d4d4;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Mono", "Segoe UI Mono", "Roboto Mono", "Oxygen Mono", "Ubuntu Mono", "Courier New", Courier, monospace;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 8px;
+            -webkit-user-select: none;
+            user-select: none;
+            box-sizing: border-box;
+        }
+
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+
+        .container {
+            background: var(--card);
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            text-align: center;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .reset-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--text);
+            opacity: 0.5;
+            pointer-events: none;
+            padding: 4px;
+            margin-left: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .reset-btn.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .reset-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .label-row span:last-child {
+            color: var(--text);
+            font-family: inherit;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            background: transparent;
+            cursor: pointer;
+            height: 24px;
+            touch-action: none;
+        }
+
+        input[type="range"]:focus {
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: var(--track-bg);
+            border-radius: 8px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: var(--primary);
+            margin-top: -8px;
+            border: none;
+            box-shadow: none;
+        }
+
+        input[type="range"]:active::-webkit-slider-thumb {
+            transform: scale(1.1);
+        }
+
+        input[type="range"]::-moz-range-track {
+            width: 100%;
+            height: 4px;
+            background: var(--track-bg);
+            border-radius: 8px;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            border: none;
+            box-shadow: none;
+        }
+
+        input[type="range"]::-ms-track {
+            width: 100%;
+            height: 4px;
+            background: transparent;
+            border-color: transparent;
+            color: transparent;
+        }
+
+        input[type="range"]::-ms-fill-lower {
+            background: var(--track-bg);
+            border-radius: 8px;
+        }
+
+        input[type="range"]::-ms-fill-upper {
+            background: var(--track-bg);
+            border-radius: 8px;
+        }
+
+        input[type="range"]::-ms-thumb {
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            border: none;
+        }
+
+        .results {
+            background-color: var(--bg);
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            gap: 24px;
+        }
+
+        .animation-container {
+            position: relative;
+            height: 160px;
+            width: 160px;
+            margin: 0 auto;
+            border-radius: 50%;
+            background-color: var(--bg);
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .crank-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10%;
+            height: 10%;
+            background: var(--accent);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+        }
+
+        .crank-arm {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width : 50%;
+            height: 10%;
+            background-color: var(--accent);
+            transform-origin: left center;
+            transform: translate(-50%, -50%);
+            border-radius: 0;
+        }
+
+        .wheel-selector {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .wheel-option {
+            padding: 8px 16px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .wheel-option.active {
+            background: var(--primary);
+            color: var(--bg);
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <div class="header-row">
+        <h1>Drivetrain Calc</h1>
+        <button class="reset-btn" id="reset-btn" aria-label="Reset">
+            <svg viewBox="0 0 24 24">
+                <path d="M23 4v6h-6"></path>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+        </button>
+    </div>
+
+    <div class="input-group">
+        <div class="label-row">
+            <span>Chainring</span>
+            <span id="val-front">53</span>
+        </div>
+        <input type="range" id="front" min="28" max="60" value="53">
+    </div>
+
+    <div class="input-group">
+        <div class="label-row">
+            <span>Cog</span>
+            <span id="val-rear">17</span>
+        </div>
+        <input type="range" id="rear" min="10" max="42" value="17">
+    </div>
+
+    <div class="input-group">
+        <div class="label-row">
+            <span>Cadence</span>
+            <span id="val-cadence">90</span>
+        </div>
+        <input type="range" id="cadence" min="20" max="200" value="90">
+    </div>
+
+    <div class="input-group">
+        <div class="label-row">
+            <span>Crank Length</span>
+            <span id="val-arm">165</span>
+        </div>
+        <input type="range" id="arm" min="150" max="200" value="165" step="2.5">
+    </div>
+
+    <div class="input-group">
+        <div class="label-row">
+            <span>Wheel Size</span>
+            <div class="wheel-selector">
+                <button class="wheel-option" data-size="650c">650c</button>
+                <button class="wheel-option active" data-size="700c">700c</button>
+            </div>
+        </div>
+        <div class="label-row" style="margin-top: 8px;">
+            <span>Tire Width</span>
+            <span id="val-width">28</span>
+        </div>
+        <input type="range" id="width" min="20" max="50" value="28">
+        <div class="label-row" style="margin-top: 4px; font-size: 0.8rem; color: var(--text-muted);">
+            <span>Wheel Circumference:</span>
+            <span id="val-wheel">2130</span>
+        </div>
+    </div>
+
+    <div class="results">
+        <div class="result-item">
+            <span>Speed:</span>
+            <span id="res-speed">0.00 km/h</span>
+        </div>
+        <div class="result-item">
+            <span>Pedal Velocity:</span>
+            <span id="res-pedal">0.00 km/h</span>
+        </div>
+        <div class="result-item">
+            <span>Gear Ratio:</span>
+            <span id="res-ratio">0.00</span>
+        </div>
+    </div>
+
+    <div>
+        <div class="animation-container" id="anim-container">
+            <div class="crank-center"></div>
+            <div class="crank-arm" id="anim-arm"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const inputs = {
+        front: document.getElementById('front'),
+        rear: document.getElementById('rear'),
+        cadence: document.getElementById('cadence'),
+        arm: document.getElementById('arm'),
+        width: document.getElementById('width')
+    };
+
+    const displays = {
+        front: document.getElementById('val-front'),
+        rear: document.getElementById('val-rear'),
+        cadence: document.getElementById('val-cadence'),
+        arm: document.getElementById('val-arm'),
+        width: document.getElementById('val-width'),
+        wheel: document.getElementById('val-wheel'),
+        speed: document.getElementById('res-speed'),
+        pedal: document.getElementById('res-pedal'),
+        ratio: document.getElementById('res-ratio')
+    };
+
+    const animArm = document.getElementById('anim-arm');
+    const animContainer = document.getElementById('anim-container');
+    const resetBtn = document.getElementById('reset-btn');
+    const wheelButtons = document.querySelectorAll('.wheel-option');
+
+    let selectedWheelSize = '700c';
+
+    const defaultValues = {
+        front: 53,
+        rear: 17,
+        cadence: 90,
+        arm: 165,
+        width: 28,
+        wheelSize: '700c'
+    };
+
+    let lastTime = performance.now();
+    let currentAngle = 0;
+    let currentAngularSpeed = 0;
+    let isPaused = false;
+
+    function getWheelCircumference() {
+        const beadDiameter = selectedWheelSize === '650c' ? 584 : 622;
+        const tireWidth = parseInt(inputs.width.value);
+        const totalDiameter = beadDiameter + (tireWidth * 2);
+        return Math.round(totalDiameter * Math.PI);
+    }
+
+    function checkResetState() {
+        const isDefault =
+            parseInt(inputs.front.value) === defaultValues.front &&
+            parseInt(inputs.rear.value) === defaultValues.rear &&
+            parseInt(inputs.cadence.value) === defaultValues.cadence &&
+            parseFloat(inputs.arm.value) === defaultValues.arm &&
+            parseInt(inputs.width.value) === defaultValues.width &&
+            selectedWheelSize === defaultValues.wheelSize;
+
+        if (isDefault) {
+            resetBtn.classList.remove('active');
+        } else {
+            resetBtn.classList.add('active');
+        }
+    }
+
+    function calculate() {
+        const front = parseInt(inputs.front.value);
+        const rear = parseInt(inputs.rear.value);
+        const cadence = parseInt(inputs.cadence.value);
+        const arm = parseFloat(inputs.arm.value);
+        const width = parseInt(inputs.width.value);
+        const wheel = getWheelCircumference();
+
+        displays.front.textContent = front;
+        displays.rear.textContent = rear;
+        displays.cadence.textContent = cadence;
+        displays.arm.textContent = arm;
+        displays.width.textContent = width;
+        displays.wheel.textContent = wheel;
+
+        const gearRatio = front / rear;
+        const wheelRPM = cadence * gearRatio;
+        const speedKph = (wheelRPM * wheel * 60) / 1000000;
+
+        currentAngularSpeed = (cadence * 2 * Math.PI) / 60;
+        const pedalSpeedMs = currentAngularSpeed * arm / 1000;
+        const pedalSpeedKph = pedalSpeedMs * 3.6;
+
+        displays.speed.textContent = speedKph.toFixed(2) + " km/h";
+        displays.pedal.textContent = pedalSpeedKph.toFixed(2) + " km/h";
+        displays.ratio.textContent = gearRatio.toFixed(2);
+
+        checkResetState();
+    }
+
+    function animate(time) {
+        if (!isPaused) {
+            const deltaTime = (time - lastTime) / 1000;
+            lastTime = time;
+
+            currentAngle += currentAngularSpeed * deltaTime;
+
+            const degrees = currentAngle * (180 / Math.PI);
+            const normalizedAngle = ((degrees % 360) + 360) % 360;
+
+            const angleTo4 = Math.abs(normalizedAngle - 30);
+            const angleTo10 = Math.abs(normalizedAngle - 200);
+
+            const dist4 = Math.min(angleTo4, 360 - angleTo4);
+            const dist10 = Math.min(angleTo10, 360 - angleTo10);
+
+            const factor4 = 1 - (dist4 / 90);
+            const factor10 = 1 - (dist10 / 120);
+
+            const baseBrightness = 0.2;
+            const boost4 = 1.0;
+            const boost10 = 0.5;
+
+            const currentBrightness = baseBrightness + (Math.max(0, factor4) * boost4) + (Math.max(0, factor10) * boost10);
+
+            animArm.style.opacity = Math.min(1, currentBrightness);
+            animArm.style.transform = `translate(0, -50%) rotate(${degrees}deg)`;
+        } else {
+            lastTime = time;
+        }
+
+        requestAnimationFrame(animate);
+    }
+
+    function updateWheelSelector() {
+        wheelButtons.forEach(btn => {
+            if (btn.dataset.size === selectedWheelSize) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+
+    function resetSliders() {
+        inputs.front.value = defaultValues.front;
+        inputs.rear.value = defaultValues.rear;
+        inputs.cadence.value = defaultValues.cadence;
+        inputs.arm.value = defaultValues.arm;
+        inputs.width.value = defaultValues.width;
+        selectedWheelSize = defaultValues.wheelSize;
+        updateWheelSelector();
+        calculate();
+    }
+
+    wheelButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            selectedWheelSize = btn.dataset.size;
+            updateWheelSelector();
+            calculate();
+        });
+    });
+
+    animContainer.addEventListener('click', () => {
+        isPaused = !isPaused;
+        if (!isPaused) {
+            lastTime = performance.now();
+        }
+    });
+
+    Object.values(inputs).forEach(input => {
+        input.addEventListener('input', calculate);
+    });
+
+    resetBtn.addEventListener('click', resetSliders);
+
+    calculate();
+    requestAnimationFrame(animate);
+</script>
+</body>
+</html>

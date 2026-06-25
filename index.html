@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Drivetrain Calc</title>
+    <title>Drivetrain Calc - Comparison</title>
     <style>
         :root {
             --primary: #ffffff;
@@ -40,7 +40,8 @@
             padding: 12px;
             border-radius: 8px;
             width: 100%;
-            max-width: 400px;
+            max-width: 380px;
+
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -160,33 +161,6 @@
             box-shadow: none;
         }
 
-        input[type="range"]::-ms-track {
-            width: 100%;
-            height: 4px;
-            background: transparent;
-            border-color: transparent;
-            color: transparent;
-        }
-
-        input[type="range"]::-ms-fill-lower {
-            background: var(--track-bg);
-            border-radius: 8px;
-        }
-
-        input[type="range"]::-ms-fill-upper {
-            background: var(--track-bg);
-            border-radius: 8px;
-        }
-
-        input[type="range"]::-ms-thumb {
-            height: 24px;
-            width: 24px;
-            border-radius: 50%;
-            background: var(--primary);
-            cursor: pointer;
-            border: none;
-        }
-
         .results {
             background-color: var(--bg);
             padding: 12px;
@@ -206,15 +180,24 @@
             gap: 24px;
         }
 
+        .animations-wrapper {
+            display: flex;
+         justify-content: space-between;
+             align-items: center;
+             gap: 20px;
+             padding: 10px 0;
+
+        }
+
         .animation-container {
             position: relative;
             height: 160px;
             width: 160px;
-            margin: 0 auto;
-            border-radius: 50%;
             background-color: var(--bg);
             overflow: hidden;
             cursor: pointer;
+            border-radius: 8px;
+
         }
 
         .crank-center {
@@ -236,9 +219,36 @@
             width : 50%;
             height: 10%;
             background-color: var(--accent);
-            transform-origin: left center;
-            transform: translate(-50%, -50%);
-            border-radius: 0;
+             transform-origin: left center;
+             transform: translate(-50%, -50%);
+             border-radius: 0 20px 20px 0;
+        }
+
+        .bar-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        .bar {
+            width: 24px;
+            background-color: var(--accent);
+            border-bottom-left-radius: 6px;
+            border-bottom-right-radius: 6px;
+            position: absolute;
+        }
+
+        .bar-top {
+            top: 0;
+            left: 32px;
+        }
+
+        .bar-right {
+            top: 0;
+            right: 32px;
         }
 
         .wheel-selector {
@@ -262,6 +272,13 @@
             background: var(--primary);
             color: var(--bg);
             border-color: var(--primary);
+        }
+
+        .anim-label {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 8px;
         }
     </style>
 </head>
@@ -322,7 +339,7 @@
             <span>Tire Width</span>
             <span id="val-width">28</span>
         </div>
-        <input type="range" id="width" min="20" max="50" value="28">
+        <input type="range" id="width" min="20" max="50" value="25">
         <div class="label-row" style="margin-top: 4px; font-size: 0.8rem; color: var(--text-muted);">
             <span>Wheel Circumference:</span>
             <span id="val-wheel">2130</span>
@@ -344,10 +361,20 @@
         </div>
     </div>
 
-    <div>
-        <div class="animation-container" id="anim-container">
-            <div class="crank-center"></div>
-            <div class="crank-arm" id="anim-arm"></div>
+    <div class="animations-wrapper" id="anim-wrapper">
+        <div style="display:flex; flex-direction:column; align-items:center;">
+            <div class="animation-container" id="anim-bars">
+                <div class="bar-container">
+                    <div class="bar bar-top" id="bar-top"></div>
+                    <div class="bar bar-right" id="bar-right"></div>
+                </div>
+            </div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center;">
+            <div class="animation-container" id="anim-rot">
+                <div class="crank-center"></div>
+                <div class="crank-arm" id="anim-arm"></div>
+            </div>
         </div>
     </div>
 </div>
@@ -374,21 +401,14 @@
     };
 
     const animArm = document.getElementById('anim-arm');
-    const animContainer = document.getElementById('anim-container');
+    const barTop = document.getElementById('bar-top');
+    const barRight = document.getElementById('bar-right');
+    const animWrapper = document.getElementById('anim-wrapper');
     const resetBtn = document.getElementById('reset-btn');
     const wheelButtons = document.querySelectorAll('.wheel-option');
 
     let selectedWheelSize = '700c';
-
-    const defaultValues = {
-        front: 53,
-        rear: 17,
-        cadence: 90,
-        arm: 165,
-        width: 28,
-        wheelSize: '700c'
-    };
-
+    const defaultValues = { front: 53, rear: 17, cadence: 90, arm: 165, width: 25, wheelSize: '700c' };
     let lastTime = performance.now();
     let currentAngle = 0;
     let currentAngularSpeed = 0;
@@ -397,24 +417,18 @@
     function getWheelCircumference() {
         const beadDiameter = selectedWheelSize === '650c' ? 584 : 622;
         const tireWidth = parseInt(inputs.width.value);
-        const totalDiameter = beadDiameter + (tireWidth * 2);
-        return Math.round(totalDiameter * Math.PI);
+        return Math.round((beadDiameter + (tireWidth * 2)) * Math.PI);
     }
 
     function checkResetState() {
-        const isDefault =
+        const isDefault = 
             parseInt(inputs.front.value) === defaultValues.front &&
             parseInt(inputs.rear.value) === defaultValues.rear &&
             parseInt(inputs.cadence.value) === defaultValues.cadence &&
             parseFloat(inputs.arm.value) === defaultValues.arm &&
             parseInt(inputs.width.value) === defaultValues.width &&
             selectedWheelSize === defaultValues.wheelSize;
-
-        if (isDefault) {
-            resetBtn.classList.remove('active');
-        } else {
-            resetBtn.classList.add('active');
-        }
+        resetBtn.classList.toggle('active', !isDefault);
     }
 
     function calculate() {
@@ -433,17 +447,13 @@
         displays.wheel.textContent = wheel;
 
         const gearRatio = front / rear;
-        const wheelRPM = cadence * gearRatio;
-        const speedKph = (wheelRPM * wheel * 60) / 1000000;
-
+        const speedKph = (cadence * gearRatio * wheel * 60) / 1000000;
         currentAngularSpeed = (cadence * 2 * Math.PI) / 60;
-        const pedalSpeedMs = currentAngularSpeed * arm / 1000;
-        const pedalSpeedKph = pedalSpeedMs * 3.6;
+        const pedalSpeedKph = (currentAngularSpeed * arm / 1000) * 3.6;
 
         displays.speed.textContent = speedKph.toFixed(2) + " km/h";
         displays.pedal.textContent = pedalSpeedKph.toFixed(2) + " km/h";
         displays.ratio.textContent = gearRatio.toFixed(2);
-
         checkResetState();
     }
 
@@ -451,44 +461,41 @@
         if (!isPaused) {
             const deltaTime = (time - lastTime) / 1000;
             lastTime = time;
-
             currentAngle += currentAngularSpeed * deltaTime;
 
-            const degrees = currentAngle * (180 / Math.PI);
-            const normalizedAngle = ((degrees % 360) + 360) % 360;
+            // Rotation Logic
+            const deg = currentAngle * (180 / Math.PI);
+            const normDeg = ((deg % 360) + 360) % 360;
+            const d4 = Math.min(Math.abs(normDeg - 30), 360 - Math.abs(normDeg - 30));
+            const d10 = Math.min(Math.abs(normDeg - 200), 360 - Math.abs(normDeg - 200));
+            const brightness = 0.2 + Math.max(0, 1 - (d4 / 90)) * 1.0 + Math.max(0, 1 - (d10 / 120)) * 0.5;
+            
+            const currentArmVal = parseFloat(inputs.arm.value);
+            const armWidthPercent = 40 + ((currentArmVal - 165) / 50) * 10; // Map 150-200 to 37%-43% approximately, centered at 165=40%
+            
+             animArm.style.width = armWidthPercent + '%';
+             animArm.style.transform = `translate(0, -50%) rotate(${deg}deg)`;
 
-            const angleTo4 = Math.abs(normalizedAngle - 30);
-            const angleTo10 = Math.abs(normalizedAngle - 200);
 
-            const dist4 = Math.min(angleTo4, 360 - angleTo4);
-            const dist10 = Math.min(angleTo10, 360 - angleTo10);
-
-            const factor4 = 1 - (dist4 / 90);
-            const factor10 = 1 - (dist10 / 120);
-
-            const baseBrightness = 0.2;
-            const boost4 = 1.0;
-            const boost10 = 0.5;
-
-            const currentBrightness = baseBrightness + (Math.max(0, factor4) * boost4) + (Math.max(0, factor10) * boost10);
-
-            animArm.style.opacity = Math.min(1, currentBrightness);
-            animArm.style.transform = `translate(0, -50%) rotate(${degrees}deg)`;
+            // Bar Logic
+            const hFactor = (Math.sin(currentAngle) + 1) / 2;
+            const frameCenter = 80; // half of 160px width
+            const armPx = (currentArmVal / 200) * 80; // scale arm length proportionally to 80px max
+            const minH = frameCenter - armPx;
+            const maxH = frameCenter + armPx;
+            const hRight = minH + (maxH - minH) * hFactor;
+            barRight.style.height = hRight + 'px';
+            barRight.style.opacity = 0.6 + (hFactor * 0.4);
+            barTop.style.height = (maxH + minH - hRight) + 'px';
+            barTop.style.opacity = 0.6 + ((1 - hFactor) * 0.4);
         } else {
             lastTime = time;
         }
-
         requestAnimationFrame(animate);
     }
 
     function updateWheelSelector() {
-        wheelButtons.forEach(btn => {
-            if (btn.dataset.size === selectedWheelSize) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
-        });
+        wheelButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.size === selectedWheelSize));
     }
 
     function resetSliders() {
@@ -502,25 +509,18 @@
         calculate();
     }
 
-    wheelButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            selectedWheelSize = btn.dataset.size;
-            updateWheelSelector();
-            calculate();
-        });
-    });
+    wheelButtons.forEach(btn => btn.addEventListener('click', () => {
+        selectedWheelSize = btn.dataset.size;
+        updateWheelSelector();
+        calculate();
+    }));
 
-    animContainer.addEventListener('click', () => {
+    animWrapper.addEventListener('click', () => {
         isPaused = !isPaused;
-        if (!isPaused) {
-            lastTime = performance.now();
-        }
+        if (!isPaused) lastTime = performance.now();
     });
 
-    Object.values(inputs).forEach(input => {
-        input.addEventListener('input', calculate);
-    });
-
+    Object.values(inputs).forEach(input => input.addEventListener('input', calculate));
     resetBtn.addEventListener('click', resetSliders);
 
     calculate();

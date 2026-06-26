@@ -413,6 +413,17 @@
     let currentAngle = 0;
     let currentAngularSpeed = 0;
     let isPaused = false;
+    let lastArmVal = 165;
+
+    const cache = {
+        front: null,
+        rear: null,
+        cadence: null,
+        arm: null,
+        width: null,
+        wheelSize: null,
+        wheelCirc: null
+    };
 
     function getWheelCircumference() {
         const beadDiameter = selectedWheelSize === '650c' ? 584 : 622;
@@ -421,7 +432,7 @@
     }
 
     function checkResetState() {
-        const isDefault = 
+        const isDefault =
             parseInt(inputs.front.value) === defaultValues.front &&
             parseInt(inputs.rear.value) === defaultValues.rear &&
             parseInt(inputs.cadence.value) === defaultValues.cadence &&
@@ -437,13 +448,33 @@
         const cadence = parseInt(inputs.cadence.value);
         const arm = parseFloat(inputs.arm.value);
         const width = parseInt(inputs.width.value);
-        const wheel = getWheelCircumference();
+
+        if (
+            front === cache.front &&
+            rear === cache.rear &&
+            cadence === cache.cadence &&
+            arm === cache.arm &&
+            width === cache.width &&
+            selectedWheelSize === cache.wheelSize
+        ) {
+            return;
+        }
+
+        cache.front = front;
+        cache.rear = rear;
+        cache.cadence = cadence;
+        cache.arm = arm;
+        cache.width = width;
+        cache.wheelSize = selectedWheelSize;
 
         displays.front.textContent = front;
         displays.rear.textContent = rear;
         displays.cadence.textContent = cadence;
         displays.arm.textContent = arm;
         displays.width.textContent = width;
+
+        const wheel = getWheelCircumference();
+        cache.wheelCirc = wheel;
         displays.wheel.textContent = wheel;
 
         const gearRatio = front / rear;
@@ -462,35 +493,39 @@
             const deltaTime = (time - lastTime) / 1000;
             lastTime = time;
             currentAngle += currentAngularSpeed * deltaTime;
-
-            // Rotation Logic
-            const deg = currentAngle * (180 / Math.PI);
-            const normDeg = ((deg % 360) + 360) % 360;
-            const d4 = Math.min(Math.abs(normDeg - 30), 360 - Math.abs(normDeg - 30));
-            const d10 = Math.min(Math.abs(normDeg - 200), 360 - Math.abs(normDeg - 200));
-            const brightness = 0.2 + Math.max(0, 1 - (d4 / 90)) * 1.0 + Math.max(0, 1 - (d10 / 120)) * 0.5;
-            
-            const currentArmVal = parseFloat(inputs.arm.value);
-            const armWidthPercent = 40 + ((currentArmVal - 165) / 50) * 10; // Map 150-200 to 37%-43% approximately, centered at 165=40%
-            
-             animArm.style.width = armWidthPercent + '%';
-             animArm.style.transform = `translate(0, -50%) rotate(${deg}deg)`;
-
-
-            // Bar Logic
-            const hFactor = (Math.sin(currentAngle) + 1) / 2;
-            const frameCenter = 80; // half of 160px width
-            const armPx = (currentArmVal / 200) * 80; // scale arm length proportionally to 80px max
-            const minH = frameCenter - armPx;
-            const maxH = frameCenter + armPx;
-            const hRight = minH + (maxH - minH) * hFactor;
-            barRight.style.height = hRight + 'px';
-            barRight.style.opacity = 0.6 + (hFactor * 0.4);
-            barTop.style.height = (maxH + minH - hRight) + 'px';
-            barTop.style.opacity = 0.6 + ((1 - hFactor) * 0.4);
         } else {
             lastTime = time;
+            const currentArmVal = parseFloat(inputs.arm.value);
+            if (currentArmVal === lastArmVal) return requestAnimationFrame(animate);
+            lastArmVal = currentArmVal;
         }
+
+        // Rotation Logic
+
+        const deg = currentAngle * (180 / Math.PI);
+        const normDeg = ((deg % 360) + 360) % 360;
+        const d4 = Math.min(Math.abs(normDeg - 30), 360 - Math.abs(normDeg - 30));
+        const d10 = Math.min(Math.abs(normDeg - 200), 360 - Math.abs(normDeg - 200));
+        const brightness = 0.2 + Math.max(0, 1 - (d4 / 90)) * 1.0 + Math.max(0, 1 - (d10 / 120)) * 0.5;
+
+        const currentArmVal = parseFloat(inputs.arm.value);
+        const armWidthPercent = 40 + ((currentArmVal - 165) / 50) * 10;
+
+        animArm.style.width = armWidthPercent + '%';
+        animArm.style.transform = `translate(0, -50%) rotate(${deg}deg)`;
+
+        // Bar Logic
+        const hFactor = (Math.sin(currentAngle) + 1) / 2;
+        const frameCenter = 80;
+        const armPx = (currentArmVal / 200) * 80;
+        const minH = frameCenter - armPx;
+        const maxH = frameCenter + armPx;
+        const hRight = minH + (maxH - minH) * hFactor;
+        barRight.style.height = hRight + 'px';
+        barRight.style.opacity = 0.6 + (hFactor * 0.4);
+        barTop.style.height = (maxH + minH - hRight) + 'px';
+        barTop.style.opacity = 0.6 + ((1 - hFactor) * 0.4);
+
         requestAnimationFrame(animate);
     }
 

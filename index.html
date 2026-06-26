@@ -182,11 +182,10 @@
 
         .animations-wrapper {
             display: flex;
-         justify-content: space-between;
-             align-items: center;
-             gap: 20px;
-             padding: 10px 0;
-
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            padding: 10px 0;
         }
 
         .animation-container {
@@ -197,7 +196,6 @@
             overflow: hidden;
             cursor: pointer;
             border-radius: 8px;
-
         }
 
         .crank-center {
@@ -219,9 +217,9 @@
             width : 50%;
             height: 10%;
             background-color: var(--accent);
-             transform-origin: left center;
-             transform: translate(-50%, -50%);
-             border-radius: 0 20px 20px 0;
+            transform-origin: left center;
+            transform: translate(-50%, -50%);
+            border-radius: 0 20px 20px 0;
         }
 
         .bar-container {
@@ -501,7 +499,6 @@
         }
 
         // Rotation Logic
-
         const deg = currentAngle * (180 / Math.PI);
         const normDeg = ((deg % 360) + 360) % 360;
         const d4 = Math.min(Math.abs(normDeg - 30), 360 - Math.abs(normDeg - 30));
@@ -509,7 +506,7 @@
         const brightness = 0.2 + Math.max(0, 1 - (d4 / 90)) * 1.0 + Math.max(0, 1 - (d10 / 120)) * 0.5;
 
         const currentArmVal = parseFloat(inputs.arm.value);
-        const armWidthPercent = 40 + ((currentArmVal - 165) / 50) * 10;
+        const armWidthPercent = (currentArmVal / 200) * 50;
 
         animArm.style.width = armWidthPercent + '%';
         animArm.style.transform = `translate(0, -50%) rotate(${deg}deg)`;
@@ -517,9 +514,9 @@
         // Bar Logic
         const hFactor = (Math.sin(currentAngle) + 1) / 2;
         const frameCenter = 80;
-        const armPx = (currentArmVal / 200) * 80;
-        const minH = frameCenter - armPx;
-        const maxH = frameCenter + armPx;
+        const armPx = (currentArmVal / 200) * 75;
+        const minH = Math.max(4, frameCenter - armPx);
+        const maxH = Math.min(156, frameCenter + armPx);
         const hRight = minH + (maxH - minH) * hFactor;
         barRight.style.height = hRight + 'px';
         barRight.style.opacity = 0.6 + (hFactor * 0.4);
